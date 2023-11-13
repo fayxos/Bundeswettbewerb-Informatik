@@ -151,7 +151,7 @@ def output(end_node):
 
 
 if __name__ == '__main__':
-    filename = "zauberschule0.txt"
+    filename = "zauberschule3.txt"
 
     while not(filename in os.listdir(os.path.dirname(__file__))):
         filename = input("Dateiname: ")
