@@ -52,45 +52,48 @@ class Node:
         self.initial_dir = initial_dir
         self.previous_node = previous_node
 
-class Direction(Enum): # x, y, z
+class Direction(Enum): # Alle Richtungen in die von einem zum nächsten Feld gelaufen werden kann
     UP = (0, -1, 0, "^")
     RIGHT = (1, 0, 0, ">")
     DOWN = (0, 1, 0, "v")
     LEFT = (-1, 0, 0, "<")
-    SWITCH_UP = (0, 0, -1, "!")
-    SWITCH_DOWN = (0, 0, 1, "!")
+    SWITCH_UP = (0, 0, -1, "!") # Wechseln des Stockwerkes anach oben
+    SWITCH_DOWN = (0, 0, 1, "!") # Wechseln des Stockwerkes nach unten
 
 def find_fastest_path(map, discovered, start, end): # Lee Algorithmus
-    queue = []
-    queue.append(Node(start[0], start[1], start[2], None, None))
+    queue = [] # Queue für Wegpunkte, die als nächstes betrachtet werden müssen
+    queue.append(Node(start[0], start[1], start[2], None, None)) # Startpunkt des Weges 
 
-    switch_queue = [None, None, None]
+    switch_queue = [None, None, None] # Queue für Wegpunkte bei denen das Stockwerk gewechselt wurde, gefüllt mit drei mal None, da das wechseln des Stockwerkes drei Sekunden dauert 
 
-    while(not(len(queue) == 0)):
-        node = queue.pop(0)
+    while(not(len(queue) == 0)): # Solange die Queue nicht leer ist
+        node = queue.pop(0) # Herausnehmen des vordersten Wegpunktes aus der Queue
         
-        for dir in Direction:
-            newX = node.x + dir.value[0]
-            newY = node.y + dir.value[1]
-            newZ = node.z + dir.value[2]
+        for dir in Direction: # Durchlaufen aller Richtungen, in die von einem Wegpunkt gegangen werden kann
+            newX = node.x + dir.value[0] # Berechnen der neuen x-Koordinate nach gehen in diese Richtung
+            newY = node.y + dir.value[1] # Berechnen der neuen y-Koordinate nach gehen in diese Richtung
+            newZ = node.z + dir.value[2] # Berechnen der neuen z-Koordinate nach gehen in diese Richtung (Stockwerk)
 
-            if newX == end[0] and newY == end[1] and newZ == end[2]:
-                return Node(newX, newY, newZ, dir, node)
+            if newX == end[0] and newY == end[1] and newZ == end[2]: # Falls die neue Position dem gesuchten Ende entspricht
+                return Node(newX, newY, newZ, dir, node) # Zurückgeben des letzten Wegpunktes des gefundenen Weges zum Ziel
             
+            # Überprüfung, ob neue Koordinaten noch im Labyrinth liegen, an dieser Position im Labyrinth keine Wand steht und der Wegpunkt noch nicht besucht wurde
             if newZ < len(map) and newZ >= 0 and newY < len(map[newZ]) and newY >= 0 and newX < len(map[newZ][newY]) and newX >= 0 and map[newZ][newY][newX] == True and not(discovered[newZ][newY][newX]) and newZ != 3:
-                if dir == Direction.SWITCH_DOWN or dir == Direction.SWITCH_UP:
-                    switch_queue.append(Node(newX, newY, newZ, dir, node))
+                if dir == Direction.SWITCH_DOWN or dir == Direction.SWITCH_UP: # Falls das Stockwerk gewechselt werden soll
+                    switch_queue.append(Node(newX, newY, newZ, dir, node)) # Hinzufügen des Wegpunktes zur Switch-Queue
                     continue
                 
-                discovered[newZ][newY][newX] = True
-                queue.append(Node(newX, newY, newZ, dir, node))
-                switch_queue.append(None)
+                discovered[newZ][newY][newX] = True # Wegpunkt als besucht markieren
+                queue.append(Node(newX, newY, newZ, dir, node)) # Wegpunkt zur Queue hinzufügen
+                switch_queue.append(None) # None zur Switch-Queue hinzufügen für Verzögerung des Stockwerkwechsels
 
-        next_switch = switch_queue.pop(0)
-        if next_switch != None:
-            if next_switch.x == end[0] and next_switch.y == end[1] and next_switch.z == end[2]:
-                return next_switch
+        next_switch = switch_queue.pop(0) # Herausnehmen des vordersten Elements der Switch-Queue
+        if next_switch != None: # Falls Element nicht None ist
+            if next_switch.x == end[0] and next_switch.y == end[1] and next_switch.z == end[2]: # Falls die neue Position dem gesuchten Ende entspricht
+                return next_switch # Zurückgeben des letzten Wegpunktes des gefundenen Weges zum Ziel
 
+            
+            # Eventuell löschen?
             if next_switch.z < len(map) and next_switch.z >= 0 and next_switch.y < len(map[next_switch.z]) and next_switch.y >= 0 and next_switch.x < len(map[next_switch.z][next_switch.y]) and next_switch.x >= 0 and map[next_switch.z][next_switch.y][next_switch.x] and not(discovered[next_switch.z][next_switch.y][next_switch.x]):
                 discovered[next_switch.z][next_switch.y][next_switch.x] = True
                 queue.append(next_switch)
@@ -110,7 +113,7 @@ def find_fastest_path(map, discovered, start, end): # Lee Algorithmus
                     else:
                         next_switch = None
 
-    return None
+    return None # Kein Weg wurde gefunden 
 
 def create_output_map(char_map, path, start):
     previous_field = start
@@ -130,7 +133,7 @@ def create_output_map(char_map, path, start):
 
     return output_string
 
-def output(end_node):
+def output(end_node, filename):
     time = 0
     path = []
 
@@ -149,25 +152,28 @@ def output(end_node):
     print(f"Zeit: {time} Sekunden\n")
     print(output_map)
 
+    save_output(output_map, time, filename)
+
+def save_output(output_map, time, filename): 
+    with open(os.path.dirname(__file__) + f"/{filename.split('.')[0]}_Loesung.txt", "w") as f:
+        f.write(f"Zeit: {time} Sekunden\n")
+        f.write(output_map)
 
 if __name__ == '__main__':
-    filename = "zauberschule0.txt"
+    filename = "zauberschule5.txt"
 
     while not(filename in os.listdir(os.path.dirname(__file__))):
         filename = input("Dateiname: ")
         if not(filename in os.listdir(os.path.dirname(__file__))):
             print("Datei wurde nicht gefunden!\n")
 
-    char_map, map, discovered, start, end = read_file(filename)
+    char_map, map, discovered, start, end = read_file(filename) # Einlesen der Eingabedatei
 
-    end_node = find_fastest_path(map, discovered, start, end)
+    end_node = find_fastest_path(map, discovered, start, end) # Finden des schnellsten Weges von A nach B
 
-    print(end)
-
-    print(end_node.x, end_node.y, end_node.z)
-
-    if end_node == None:
+    if end_node == None: # Es wurde kein Weg gefunden
         print("Es wurde kein Weg von A nach B gefunden!")
     else:
-        output(end_node)
+        output(end_node, filename) # Ausgeben der Lösung in der Konsole und Speichern in Textdatei
+        
 

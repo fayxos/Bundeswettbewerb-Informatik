@@ -112,9 +112,12 @@ def read_file(filename):
 
     return structure, width, height
 
+def save_output(output, filename): 
+    with open(os.path.dirname(__file__) + f"/{filename.split('.')[0]}_Loesung.txt", "w") as f:
+        f.write(output)
 
 if __name__ == '__main__':
-    filename = "nandu2.txt"
+    filename = "nandu5.txt"
 
     while not(filename in os.listdir(os.path.dirname(__file__))):
         filename = input("Dateiname: ")
@@ -127,4 +130,4 @@ if __name__ == '__main__':
 
     print("Ausgabe: ")
     print(output)
-    print()
+    save_output(output, filename)

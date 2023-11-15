@@ -1,0 +1,5 @@
+Q1    Q2    L1    L2    
+Aus   Aus   Aus   Aus   
+Aus   An    Aus   Aus   
+An    Aus   Aus   Aus   
+An    An    An    An    
