@@ -83,11 +83,11 @@ def numbers_have_space(grid, number_count):
 
     return True
 
-def print_grid(grid):
+def print_grid(grid): # Ausgeben des Gitters in der Konsole
     for row in grid:
         print(" ".join(map(str, row)))
 
-def save_grid(n , number_count, grid):
+def save_grid(n , number_count, grid): # Speichern der Ausgabe in Textdatei
     arukone_count = 0
     files = os.listdir(os.path.dirname(__file__))
     for file in files:
