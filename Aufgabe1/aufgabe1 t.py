@@ -125,13 +125,10 @@ def generate_arukone(n, number_count):
     numbers = [] # Liste mit allen Zahlen
     for i in range(1, number_count+1): # Jede Zahl wird zwei mal hinzugefügt
         numbers.append(i)
-        numbers.append(i)
 
     shuffle(numbers) # Zahlen werden zufällig durchgemischt
     
-    while len(numbers) > 0: 
-        number = numbers.pop(0) # Jede Zahl wird nacheinander aus der Liste herausgenommen
-
+    for number in numbers: 
         posible_positions = []
 
         for r, row in enumerate(grid):
@@ -142,21 +139,33 @@ def generate_arukone(n, number_count):
         while len(posible_positions) > 0:
             x, y = posible_positions.pop(randint(0, len(posible_positions)-1) if len(posible_positions) > 1 else 0) # Zufällige mögliche Position wird der Liste entnommen
 
+            new_grid = deepcopy(grid) # Kopie des Gitters
+            new_grid[y][x] = number # Hinzufügen der Zahl zur Gitter-Kopie
+
+            # Überprüfung ob jetzt noch alle Zahlen mindestens ein leeres benachbartes Feld haben
+            if numbers_have_space(new_grid, number_count): 
+                grid[y][x] = number # Hinzufügen der Zahl zum Gitter
+                break # Weiter mit nächster Zahl
+
+            continue
+
+    shuffle(numbers)
+
+    for number in numbers:
+        posible_positions = []
+
+        for r, row in enumerate(grid):
+            for c, col in enumerate(row):
+                if col == 0:
+                    posible_positions.append((c, r)) # Alle Positionen an denen noch keine Zahl oder Linienzug vorhanden ist werden zu den möglichen Positionen hinzugefügt
+
+        while len(posible_positions) > 0:
+            x, y = posible_positions.pop(randint(0, len(posible_positions)-1) if len(posible_positions) > 1 else 0) # Zufällige mögliche Position wird der Liste entnommen
+    
             number_pos = find_position(grid, number) # Position der Zahl, falls diese bereits einmal im Gitter vorhanden ist
-            # Falls Zahl noch nicht im Gitter vorhanden ist
-            if number_pos == None: 
-                new_grid = deepcopy(grid) # Kopie des Gitters
-                new_grid[y][x] = number # Hinzufügen der Zahl zur Gitter-Kopie
-
-                # Überprüfung ob jetzt noch alle Zahlen mindestens ein leeres benachbartes Feld haben
-                if numbers_have_space(new_grid, number_count): 
-                    grid[y][x] = number # Hinzufügen der Zahl zum Gitter
-                    break # Weiter mit nächster Zahl
-
-                continue
 
             # Überprüfung ob Position direkt neben der bereits vorhandenen Zahl ist
-            elif (number_pos[1] == y and abs(number_pos[0]-x) <= 1) or (number_pos[0] == x and abs(number_pos[1]-y) <= 1): 
+            if (number_pos[1] == y and abs(number_pos[0]-x) <= 1) or (number_pos[0] == x and abs(number_pos[1]-y) <= 1): 
                 continue # Wenn nicht, weiter mit nächster möglicher Position
 
             end_node = find_path(grid, number, x, y, number_count) # Finden des schnellsten Weges von der Zahl zu der bereits vorhandenen gleichen Zahl      
@@ -176,8 +185,6 @@ def generate_arukone(n, number_count):
                     grid[prev_node.y][prev_node.x] = -1 # Eintragen der Linienzügen im Gitter
                     prev_node = prev_node.previous_node
 
-        print_grid(grid)
-
     # Entfernen der Linienzüge aus dem Gitter
     for r in range(len(grid)): 
         for c in range(len(grid[r])):
@@ -191,6 +198,6 @@ def generate_arukone(n, number_count):
     save_grid(n, number_count, grid) # Speichern des Rätsels in Textdatei
 
 if __name__ == "__main__":
-    n = 6 # Gittergröße n x n
-    number_count = 7
+    n = 10 # Gittergröße n x n
+    number_count = 15
     generate_arukone(n, number_count)
