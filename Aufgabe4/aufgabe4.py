@@ -1,7 +1,7 @@
 import os
 
 def white(left, right): # weißer Baustein
-    on = not(left and right) # ¬(right ∧ ¬right)
+    on = not(left and right) # ¬(left ∧ right)
     return (on, on)
 
 def red(_, right): # roter Baustein mit Lichtsensor oben

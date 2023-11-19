@@ -2,6 +2,7 @@ from random import randint, shuffle
 from enum import Enum
 from copy import deepcopy
 import os
+import math
 
 def find_position(grid, number):
     for r, row in enumerate(grid):
@@ -35,8 +36,6 @@ def find_path(grid, number, x, y, number_count):
     discovered = deepcopy(grid) # Kopie des Gitters wird erstellt, discovered beinhaltet, welche Felder beim Suchen des Weges schon besucht wurden
     discovered[y][x] = number # Startposition wird als besucht markiert
 
-    path = None
-
     while(not(len(queue) == 0)):
         node = queue.pop(0) # Vorderste Node wird aus Queue entfernt
         
@@ -46,9 +45,8 @@ def find_path(grid, number, x, y, number_count):
             newY = node.y + dir.value[1] # neuer x-Wert in jeweilige Richtung
 
             if newX == end[0] and newY == end[1]: # Ende wurde gefunden
-                path = Node(newX, newY, node) # Letzter Schritt des Weges wird zurückgegeben
-                continue
-            
+                return Node(newX, newY, node) # Letzter Schritt des Weges wird zurückgegeben
+
             # Überprüfung ob neue Position innerhalb des Gitters liegt, an dieser Position noch keine andere Zahl oder Linienzug vorhanden ist und diese Position noch nicht besucht wurde
             if newY >= 0 and newY < len(grid) and newX >= 0 and newX < len(grid[newY]) and (grid[newY][newX] == 0 or grid[newY][newX] == number) and (discovered[newY][newX] == 0 or discovered[newY][newX] == number): 
                 new_discovered = deepcopy(discovered)
@@ -59,7 +57,7 @@ def find_path(grid, number, x, y, number_count):
                     discovered[newY][newX] = -1 # Position wird als besucht markiert
                     queue.append(Node(newX, newY, node)) # Wegpunkt wird zur Queue hinzugefügt
 
-    return path
+    return None
 
 def number_has_space(grid, number):
     number_count = 0 # Anzahl, wie oft eine Zahl im Gitter vorkommt
@@ -74,13 +72,26 @@ def number_has_space(grid, number):
     # Falls Zahl erst einmal im Gitter vorhanden ist, muss sie mindestens zwei leere benachbarte Felder in eine Richtung haben, um Platz für die zweite Zahl zu haben
     elif number_count == 1: 
         x, y = find_position(grid, number) # Position der Zahl im Gitter finden
-        up = y-1 >= 0 and y-2 >= 0 and grid[y-1][x] == 0 and grid[y-2][x] == 0 # zwei leere benachbarte Felder nach oben?
-        right = x+1 < len(grid[y]) and x+2 < len(grid[y]) and grid[y][x+1] == 0 and grid[y][x+2] == 0 # zwei leere benachbarte Felder nach rechts?
-        down = x-1 >= 0 and x-2 >= 0 and grid[y][x-1] == 0 and grid[y][x-2] == 0 # zwei leere benachbarte Felder nach unten?
-        left = y-1 >= 0 and y-2 >= 0 and grid[y-1][x] == 0 and grid[y-2][x] == 0 # zwei leere benachbarte Felder nach links?
+        directions = { "up": [False, (x, y-1), (x, y-2)], "right": [False, (x+1, y), (x+2, y)], "down": [False, (x, y+1), (x, y+2)], "left": [False, (x-1, y), (x-2, y)] }
+        directions["up"][0] = y-1 >= 0 and y-2 >= 0 and grid[y-1][x] == 0 and grid[y-2][x] == 0 # zwei leere benachbarte Felder nach oben?
+        directions["right"][0] = x+1 < len(grid[y]) and x+2 < len(grid[y]) and grid[y][x+1] == 0 and grid[y][x+2] == 0 # zwei leere benachbarte Felder nach rechts?
+        directions["down"][0] = y+1 < len(grid) and y+2 < len(grid) and grid[y+1][x] == 0 and grid[y+2][x] == 0 # zwei leere benachbarte Felder nach unten?
+        directions["left"][0] = x-1 >= 0 and x-2 >= 0 and grid[y][x-1] == 0 and grid[y][x-2] == 0 # zwei leere benachbarte Felder nach links?
 
         # Falls Zahl mindestens zwei leere banchbarte Felder in eine Richtung hat
-        if up or right or down or left: 
+        if directions["up"][0] or directions["right"][0] or directions["down"][0] or directions["left"][0]: 
+            possible_directions = {k: v for k, v in directions.items() if v[0] == True}
+
+            keys = list(possible_directions.keys())
+
+            shuffle(keys)
+
+            direction = possible_directions[keys[0]] # Zufällige freie Richtung ausgewählt
+            
+            # Felder in diese Richtung als belegt markieren
+            grid[direction[1][1]][direction[1][0]] = -1
+            grid[direction[2][1]][direction[2][0]] = -1
+
             return True
     
     return False
@@ -113,10 +124,6 @@ def save_grid(n , number_count, grid):
             f.write(" ".join(map(str, row)) + "\n")
 
 def generate_arukone(n, number_count):
-    if n % 2 != 0 or n < 4:
-        print("Ungültige Gittergröße. Sie muss gerade und mindestens 4 sein.")
-        return
-
     grid = [[0 for _ in range(n)] for _ in range(n)] # Gitter der Größe n x n
 
     if number_count == 0:
@@ -125,13 +132,10 @@ def generate_arukone(n, number_count):
     numbers = [] # Liste mit allen Zahlen
     for i in range(1, number_count+1): # Jede Zahl wird zwei mal hinzugefügt
         numbers.append(i)
-        numbers.append(i)
 
     shuffle(numbers) # Zahlen werden zufällig durchgemischt
     
-    while len(numbers) > 0: 
-        number = numbers.pop(0) # Jede Zahl wird nacheinander aus der Liste herausgenommen
-
+    for number in numbers: 
         posible_positions = []
 
         for r, row in enumerate(grid):
@@ -139,24 +143,39 @@ def generate_arukone(n, number_count):
                 if col == 0:
                     posible_positions.append((c, r)) # Alle Positionen an denen noch keine Zahl oder Linienzug vorhanden ist werden zu den möglichen Positionen hinzugefügt
 
+        shuffle(posible_positions)
+
         while len(posible_positions) > 0:
-            x, y = posible_positions.pop(randint(0, len(posible_positions)-1) if len(posible_positions) > 1 else 0) # Zufällige mögliche Position wird der Liste entnommen
+            x, y = posible_positions.pop(0) # Zufällige mögliche Position wird der Liste entnommen
 
-            number_pos = find_position(grid, number) # Position der Zahl, falls diese bereits einmal im Gitter vorhanden ist
-            # Falls Zahl noch nicht im Gitter vorhanden ist
-            if number_pos == None: 
-                new_grid = deepcopy(grid) # Kopie des Gitters
-                new_grid[y][x] = number # Hinzufügen der Zahl zur Gitter-Kopie
+            new_grid = deepcopy(grid) # Kopie des Gitters
+            new_grid[y][x] = number # Hinzufügen der Zahl zur Gitter-Kopie
 
-                # Überprüfung ob jetzt noch alle Zahlen mindestens ein leeres benachbartes Feld haben
-                if numbers_have_space(new_grid, number_count): 
-                    grid[y][x] = number # Hinzufügen der Zahl zum Gitter
-                    break # Weiter mit nächster Zahl
+            # Überprüfung ob jetzt noch alle Zahlen mindestens ein leeres benachbartes Feld haben
+            if numbers_have_space(new_grid, number_count): 
+                grid[y][x] = number # Hinzufügen der Zahl zum Gitter
+                break # Weiter mit nächster Zahl
 
-                continue
+            continue
+
+    shuffle(numbers)
+
+    for number in numbers:
+        posible_positions = []
+
+        for r, row in enumerate(grid):
+            for c, col in enumerate(row):
+                if col == 0:
+                    posible_positions.append((c, r)) # Alle Positionen an denen noch keine Zahl oder Linienzug vorhanden ist werden zu den möglichen Positionen hinzugefügt
+
+        number_pos = find_position(grid, number) # Position der Zahl, falls diese bereits einmal im Gitter vorhanden ist
+
+        posible_positions.sort(key= lambda p: math.hypot(p[1]-number_pos[1], p[0]-number_pos[0]), reverse=True)
+
+        for x, y in posible_positions:
 
             # Überprüfung ob Position direkt neben der bereits vorhandenen Zahl ist
-            elif (number_pos[1] == y and abs(number_pos[0]-x) <= 1) or (number_pos[0] == x and abs(number_pos[1]-y) <= 1): 
+            if (number_pos[1] == y and abs(number_pos[0]-x) <= 1) or (number_pos[0] == x and abs(number_pos[1]-y) <= 1): 
                 continue # Wenn nicht, weiter mit nächster möglicher Position
 
             end_node = find_path(grid, number, x, y, number_count) # Finden des schnellsten Weges von der Zahl zu der bereits vorhandenen gleichen Zahl      
@@ -176,8 +195,6 @@ def generate_arukone(n, number_count):
                     grid[prev_node.y][prev_node.x] = -1 # Eintragen der Linienzügen im Gitter
                     prev_node = prev_node.previous_node
 
-        print_grid(grid)
-
     # Entfernen der Linienzüge aus dem Gitter
     for r in range(len(grid)): 
         for c in range(len(grid[r])):
@@ -191,6 +208,14 @@ def generate_arukone(n, number_count):
     save_grid(n, number_count, grid) # Speichern des Rätsels in Textdatei
 
 if __name__ == "__main__":
-    n = 6 # Gittergröße n x n
-    number_count = 7
-    generate_arukone(n, number_count)
+    n = input("Gittergröße (mindestens 4): ") # Gittergröße n x n
+
+    if n.isnumeric() and int(n) >= 4:
+        number_count = input("Anzahl an Zahlenpaaren (0 für zufällige Anzahl, maximal n): ")
+
+        if number_count.isnumeric() and int(number_count) >= 0 and int(number_count) <= int(n):
+            generate_arukone(int(n), int(number_count))
+        else:
+            print("Die Anzahl an Zahlenpaaren muss mindestens 0 und maximal n sein.")
+    else:
+        print("Ungültige Eingabe für Größe des Gitters (mindestens 4).")
